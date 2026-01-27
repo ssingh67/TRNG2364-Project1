@@ -241,3 +241,7 @@ crash.log
 
 # VS Code (team preference: ignore by default)
 .vscode/
+
+# OS
+.DS_Store
+Thumbs.db
