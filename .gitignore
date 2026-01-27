@@ -205,3 +205,39 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# ----------------------------
+# Project-specific ignores
+# ----------------------------
+
+# Local dataset files (keep folder structure, not the data)
+data/raw/*
+data/processed/*
+data/rejects/*
+data/logs/*
+data/reports/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/rejects/.gitkeep
+!data/logs/.gitkeep
+!data/reports/.gitkeep
+
+# Common data exports
+*.csv
+*.json
+*.parquet
+*.zip
+
+# BUT allow committed sample data (if we create small samples later)
+!data/sample/**
+!data/sample/.gitkeep
+
+# AWS / IaC artifacts (if used)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# VS Code (team preference: ignore by default)
+.vscode/
