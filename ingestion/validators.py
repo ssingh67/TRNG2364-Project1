@@ -7,22 +7,31 @@ This module is intended to hold:
 - Any reusable validation rules shared across datasets
 
 NOTE:
-- Logic currently lives in read_results.py
-- That logic should be refactored into functions here (I have comments about what needs to move into here)
 - Ingestion files should CALL these functions, not reimplement validation
 """
 
-# These are the placeholder functions:
-def validate_required_columns(df, require_columns):
-    """
-    Check that all required columns exist in the DataFrame
-    Then returns a list of missing columns (empty list if none are missing)
-    """
-    pass
+import pandas as pd
 
-def split_valid_rejects_by_null(df, key_columns):
+
+def validate_required_columns(df: pd.DataFrame, required_columns: list[str]) -> list[str]:
     """
-    Split a DataFrame into valid and rejected rows based on null values in key columns (there should not be any null values)
-    Then return (valid_df, rejects_df)
+    Check that all required columns exist in the DataFrame.
+    Returns a list of missing columns (empty list if none are missing).
     """
-    pass
+    return [col for col in required_columns if col not in df.columns]
+
+
+def split_valid_rejects_by_null(
+    df: pd.DataFrame, key_columns: list[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Split a DataFrame into valid and rejected rows based on null values
+    in key columns. Any row with a null in ANY key column is rejected.
+    Returns (valid_df, rejects_df).
+    """
+    reject_mask = df[key_columns].isna().any(axis=1)
+
+    valid_df = df[~reject_mask].copy()
+    rejects_df = df[reject_mask].copy()
+
+    return valid_df, rejects_df

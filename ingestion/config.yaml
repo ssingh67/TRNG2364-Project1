@@ -1,0 +1,19 @@
+paths:
+  input_path: ./data/raw/results.csv
+  valid_output_path: ./data/processed/results_processed.csv
+  rejected_output_path: ./data/rejects/results_rejects.csv
+
+validation:
+  required_columns:
+    - resultId
+    - raceId
+    - driverId
+    - constructorId
+    - position
+    - points
+
+  key_columns:
+    - resultId
+    - raceId
+    - driverId
+    - constructorId
