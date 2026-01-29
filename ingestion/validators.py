@@ -13,12 +13,15 @@ NOTE:
 import pandas as pd
 
 
-def validate_required_columns(df: pd.DataFrame, required_columns: list[str]) -> list[str]:
+def validate_required_columns(df: pd.DataFrame, required_columns: list[str]) -> None:
     """
-    Check that all required columns exist in the DataFrame.
-    Returns a list of missing columns (empty list if none are missing).
+    Ensure all required columns exist in the DataFrame.
+    Raises ValueError if any required columns are missing.
     """
-    return [col for col in required_columns if col not in df.columns]
+    missing = [col for col in required_columns if col not in df.columns]
+
+    if missing:
+        raise ValueError(f"Required columns missing from DataFrame: {missing}")
 
 
 def split_valid_rejects_by_null(
@@ -29,6 +32,11 @@ def split_valid_rejects_by_null(
     in key columns. Any row with a null in ANY key column is rejected.
     Returns (valid_df, rejects_df).
     """
+    missing_keys = [c for c in key_columns if c not in df.columns]
+
+    if missing_keys:
+        raise ValueError(f"Key columns missing from DataFrame: {missing_keys}")
+
     reject_mask = df[key_columns].isna().any(axis=1)
 
     valid_df = df[~reject_mask].copy()

@@ -1,69 +1,44 @@
 # Testing to see if we can read the data
 import pandas as pd
+import yaml
+
 from ingestion.validators import (
     validate_required_columns,
     split_valid_rejects_by_null,
 )
+from ingestion.loader import load_config, validate_config, ensure_parent_dir
 
+def run_results_ingestion(config_path: str = "./ingestion/config.yaml") -> None:
+    config = load_config(config_path)
+    validate_config(config)
 
-def run_results_ingestion():
-    """
-    Ingests the Formula 1 results dataset by:
-    - Reading raw CSV data
-    - Performing basic structural validation
-    - Separating valid and rejected rows
-    - Exporting results to processed and rejects folders
-    """
+    input_path = config["paths"]["input_path"]
+    valid_output_path = config["paths"]["valid_output_path"]
+    rejected_output_path = config["paths"]["rejected_output_path"]
 
-    # Attempt to read the file from the raw results CSV file
+    required_columns = config["validation"]["required_columns"]
+    key_columns = config["validation"]["key_columns"]
+
+    ensure_parent_dir(input_path)
+    ensure_parent_dir(valid_output_path)
+    ensure_parent_dir(rejected_output_path)
+
+    # Read CSV
     try:
-        results_df = pd.read_csv("./data/raw/results.csv")
-    except FileNotFoundError:
-        print("File Not Found.")
-        return
-
-    # Display a preview of the dataset for sanity checking
-    print("\nResults DataFrame Head:")
-    print(results_df.head())
-
-    # Display DataFrame schema info (columns, types, non-null counts)
-    print("\nResults DataFrame Info:")
-    results_df.info()
-
-    required_columns = [
-        "resultId",
-        "raceId",
-        "driverId",
-        "constructorId",
-        "position",
-        "points",
-    ]
-
-    key_columns = [
-        "resultId",
-        "raceId",
-        "driverId",
-        "constructorId",
-    ]
-
+        results_df = pd.read_csv(input_path)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Input file not found at: {input_path}") from e
+    
     # Validate required columns
-    missing_cols = validate_required_columns(results_df, required_columns)
-    if missing_cols:
-        print(f"\nMissing required columns: {missing_cols}")
-        return
-    else:
-        print("\nNo missing columns\n")
+    validate_required_columns(results_df, required_columns)
 
     # Split valid vs rejected rows
     valid_df, rejects_df = split_valid_rejects_by_null(results_df, key_columns)
 
-    # Output basic row counts for verification
-    print(f"Valid rows: {len(valid_df)}")
-    print(f"Rejected rows: {len(rejects_df)}\n")
+    # Export
+    valid_df.to_csv(valid_output_path, index = False)
+    rejects_df.to_csv(rejected_output_path, index = False)
 
-    valid_df.to_csv("./data/processed/results_processed.csv", index=False)
-    rejects_df.to_csv("./data/rejects/results_rejects.csv", index=False)
-
-    print("Export Complete:")
-    print(" - ./data/processed/results_processed.csv")
-    print(" - ./data/rejects/results_rejects.csv")
+    print("Ingestion Complete")
+    print(f" - Valid rows: {len(valid_df)} -> {valid_output_path}")
+    print(f" - Rejected rows: {len(rejects_df)} -> {rejected_output_path}")
