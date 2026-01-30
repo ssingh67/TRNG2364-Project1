@@ -45,7 +45,7 @@ No code changes are required to adjust ingestion behavior - only config updates.
 ### Outputs
 - ```data/processed/``` → validated and cleaned data
 - ```data/rejects/``` → records that failed validation
-- ```data/logs/``` → ingestion logs
+- ```data/logs/``` → reserved for ingestion logs (later phase)
 
 This ingestion layer is stable and safe to depend on for later phases (database loading, APIs, and AWS development)
 
