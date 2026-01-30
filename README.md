@@ -10,12 +10,44 @@ Full-stack data engineering project using the Ergast Formula 1 dataset.
 - `data/`       Local dev data folders (raw/processed/rejects)
 
 ## Part 1 Goal (Data Ingestion Subsystem)
-- Read CSV/JSON
-- Validate + clean
-- Remove duplicates
-- Load valid rows into PostgreSQL staging table(s)
-- Store rejected rows + reasons
-- Logging + test coverage (PyTest)
+
+The Data Ingestion Subsystem is responsible for reading raw dataset files, validating and cleaning the data, and producing standardized outputs that downstream components can safely depend on.
+
+### What ingestion does
+- Read raw data from CSV (config-driven)
+- Validate schema and row-level data
+- Cleans and standardizes values
+- Removes duplicate records
+- Separates valid and rejected rows
+- Write deterministic outputs for downstream use
+
+### How to run
+```powershell
+python run_ingestion.py
+```
+
+## Configuration
+
+All ingestion behavior is controlled by:
+```
+ingestion/config.yaml
+```
+
+The configuration defines:
+- Source file paths
+- Required columns
+- Validation rules
+- Deduplication keys
+- Output locations
+
+No code changes are required to adjust ingestion behavior - only config updates.
+
+### Outputs
+- ```data/processed/``` → validated and cleaned data
+- ```data/rejects/``` → records that failed validation
+- ```data/logs/``` → ingestion logs
+
+This ingestion layer is stable and safe to depend on for later phases (database loading, APIs, and AWS development)
 
 ## Dataset
 Ergast F1 dataset (bulk CSV export). Primary ingestion target: `results.csv`.
@@ -31,7 +63,6 @@ Create the virtual environment:
 ```powershell
 python -m venv venv
 ```
-
 
 Activate the virtual environment
 ```powershell
