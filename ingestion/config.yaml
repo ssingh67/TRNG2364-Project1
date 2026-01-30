@@ -3,6 +3,9 @@ paths:
   valid_output_path: ./data/processed/results_processed.csv
   rejected_output_path: ./data/rejects/results_rejects.csv
 
+logging:
+  log_dir: data/logs
+
 validation:
   required_columns:
     - resultId

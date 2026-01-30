@@ -8,8 +8,11 @@ This script is responsible for:
 All dataset-specifc logic lives in the ingestion package.
 """
 
-# Import the function from ingestion/read_results
 from ingestion.read_results import run_results_ingestion
+from ingestion.loader import load_config
+from ingestion.logging_utils import setup_logger
+
+
 
 def main():
     """
@@ -17,7 +20,17 @@ def main():
 
     Additional ingestion steps (e.g., drivers, races) can be added later if we want
     """
-    run_results_ingestion()
+    config = load_config()
+    logger = setup_logger(config)
+
+    logger.info("Ingestion run started")
+
+    try:
+        run_results_ingestion()
+        logger.info("Ingestion run finished successfully")
+    except Exception as e:
+        logger.exception(f"Ingestion run failed: {e}")
+        raise
 
 if __name__ == "__main__":
     main()

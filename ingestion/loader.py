@@ -1,7 +1,7 @@
 from pathlib import Path
 import yaml
 
-def load_config(config_path: str) -> dict:
+def load_config(config_path: str = "ingestion/config.yaml") -> dict:
     """
     Load ingestion configuration from a YAML file
     """
