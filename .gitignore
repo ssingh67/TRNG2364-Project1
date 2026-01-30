@@ -212,27 +212,20 @@ __marimo__/
 # Project-specific ignores
 # ----------------------------
 
-# Local dataset files (keep folder structure, not the data)
-data/raw/*
-data/processed/*
-data/rejects/*
-data/logs/*
-data/reports/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/rejects/.gitkeep
-!data/logs/.gitkeep
-!data/reports/.gitkeep
-
 # Common data exports
 *.csv
 *.json
 *.parquet
 *.zip
 
-# BUT allow committed sample data (if we create small samples later)
-!data/sample/**
-!data/sample/.gitkeep
+# Generated ingestion outputs (do not commit)
+data/processed/**
+data/rejects/**
+data/logs/**
+data/reports/**
+
+# Allow the raw dataset required to run ingestion
+!data/raw/results.csv
 
 # AWS / IaC artifacts (if used)
 .terraform/
@@ -246,4 +239,3 @@ crash.log
 # OS
 .DS_Store
 Thumbs.db
-
