@@ -1,14 +1,11 @@
 # Testing to see if we can read the data
 import pandas as pd
-import yaml
 
 from ingestion.validators import (
     validate_required_columns,
     split_valid_rejects_by_null,
 )
 from ingestion.loader import load_config, validate_config, ensure_parent_dir
-from ingestion.db_loader import load_results_to_postgres
-from ingestion.db import get_connection
 from ingestion.logging_utils import setup_logger
 
 
@@ -45,19 +42,6 @@ def run_results_ingestion(config_path: str = "./ingestion/config.yaml") -> None:
     valid_df.to_csv(valid_output_path, index = False)
     rejects_df.to_csv(rejected_output_path, index = False)
 
-    table_name = "stg_results"
-    conn = get_connection()
-    try:
-        inserted = load_results_to_postgres(
-            df = valid_df,
-            conn = conn,
-            table_name = table_name,
-            columns = required_columns,
-        )
-    finally:
-        conn.close()
-
     logger.info("Ingestion complete")
     logger.info(f"Valid rows: {len(valid_df)} -> {valid_output_path}")
     logger.info(f"Rejected rows: {len(rejects_df)} -> {rejected_output_path}")
-    logger.info(f"Inserted {inserted} rows into table '{table_name}'")
