@@ -6,6 +6,9 @@ paths:
 logging:
   log_dir: data/logs
 
+database:
+  table_name: stg_results
+
 validation:
   required_columns:
     - resultId

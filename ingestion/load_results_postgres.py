@@ -1,39 +1,41 @@
 import pandas as pd
-from backend.db import get_conn
+from psycopg2.extensions import connection as PgConnection
+from psycopg2.extras import execute_batch
+from typing import Sequence, List
 
 
-def load_results_to_postgres(csv_path: str):
+def load_results_to_postgres(
+        df: pd.DataFrame,
+        conn: PgConnection,
+        table_name: str,
+        columns: Sequence[str],
+        page_size: int = 100
+) -> int:
     """
     Load processed results into PostgreSQL staging table.
     """
-    df = pd.read_csv(csv_path)
+    if df is None or df.empty:
+        return 0
+    
+    missing = [c for c in columns if c not in df.columns]
+    if missing:
+        raise ValueError(f"DataFrame missing required DB columns: {missing}")
+    
+    col_list = ", ".join(columns)
+    placeholders = ", ".join(["%s"] * len(columns))
+    insert_sql = f"INSERT INTO {table_name} ({col_list}) VALUES ({placeholders})"
 
-    insert_sql = """
-        INSERT INTO stg_results (
-            result_id,
-            race_id,
-            driver_id,
-            constructor_id,
-            position,
-            points
-        )
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """
+    records: List[tuple] = [
+        tuple(row[c] for c in columns) for _, row in df.iterrows()
+    ]
 
-    with get_conn() as conn:
+    try:
         with conn.cursor() as cur:
-            for _, row in df.iterrows():
-                cur.execute(
-                    insert_sql,
-                    (
-                        row["resultId"],
-                        row["raceId"],
-                        row["driverId"],
-                        row["constructorId"],
-                        row["position"],
-                        row["points"],
-                    )
-                )
+            execute_batch(cur, insert_sql, records, page_size = page_size)
+        
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
-    print(f"Inserted {len(df)} rows into stg_results")
+    return len(records)

@@ -7,7 +7,8 @@ from ingestion.validators import (
 )
 from ingestion.loader import load_config, validate_config, ensure_parent_dir
 from ingestion.logging_utils import setup_logger
-
+from backend.db import get_conn
+from ingestion.load_results_postgres import load_results_to_postgres
 
 
 def run_results_ingestion(config_path: str = "./ingestion/config.yaml") -> None:
