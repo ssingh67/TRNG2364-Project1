@@ -21,6 +21,19 @@ The Data Ingestion Subsystem is responsible for reading raw dataset files, valid
 - Separates valid and rejected rows
 - Write deterministic outputs for downstream use
 
+
+### Outputs and Database Load
+
+Ingestion reads `data/raw/results.csv`, validates required columns, splits valid vs rejected rows, and writes outputs to:
+- `data/processed/` → cleaned and validated CSV
+- `data/rejects/` → rejected rows
+- `data/logs/` → ingestion run logs
+
+Optional database load:
+- If PostgreSQL is configured (via `.env`) and the `stg_results` table exists, ingestion can load valid rows into the staging table using `psycopg2`.
+- Inserts use parameterized queries and batch execution.
+
+
 ### How to run
 ```powershell
 python run_ingestion.py
