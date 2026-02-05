@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from psycopg2.extensions import connection as PgConnection
 from psycopg2.extras import execute_batch
 from typing import Sequence, List
@@ -16,6 +17,9 @@ def load_results_to_postgres(
     """
     if df is None or df.empty:
         return 0
+    
+    # Converting NaN/NaT to Python None so psycopg2 inserts NULLs
+    df = df.replace({np.nan: None})
     
     missing = [c for c in columns if c not in df.columns]
     if missing:

@@ -22,6 +22,8 @@ def validate_required_columns(df: pd.DataFrame, required_columns: list[str]) -> 
 
     if missing:
         raise ValueError(f"Required columns missing from DataFrame: {missing}")
+    
+
 
 
 def split_valid_rejects_by_null(
