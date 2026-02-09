@@ -8,7 +8,7 @@ This script is responsible for:
 All dataset-specifc logic lives in the ingestion package.
 """
 
-from ingestion.read_results import run_results_ingestion
+from ingestion.read_csv import run_all_ingestion
 from ingestion.loader import load_config
 from ingestion.logging_utils import setup_logger
 
@@ -26,7 +26,7 @@ def main():
     logger.info("Ingestion run started")
 
     try:
-        run_results_ingestion()
+        run_all_ingestion()
         logger.info("Ingestion run finished successfully")
     except Exception as e:
         logger.exception(f"Ingestion run failed: {e}")

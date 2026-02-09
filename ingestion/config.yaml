@@ -1,25 +1,43 @@
-paths:
-  input_path: ./data/raw/results.csv
-  valid_output_path: ./data/processed/results_processed.csv
-  rejected_output_path: ./data/rejects/results_rejects.csv
-
 logging:
   log_dir: data/logs
 
-database:
-  table_name: stg_results
-
-validation:
-  required_columns:
-    - resultId
-    - raceId
-    - driverId
-    - constructorId
-    - position
-    - points
-
-  key_columns:
-    - resultId
-    - raceId
-    - driverId
-    - constructorId
+datasets:
+  results:
+    input_path: ./data/raw/results.csv
+    valid_output_path: ./data/processed/results_processed.csv
+    rejected_output_path: ./data/rejects/results_rejects.csv
+    table_name: staging.stg_results
+    required_columns:
+      [ "resultId", "raceId", "driverId", "constructorId", "position", "points" ]
+    key_columns:
+      [ "resultId", "raceId", "driverId", "constructorId" ]
+  
+  drivers:
+    input_path: ./data/raw/drivers.csv
+    valid_output_path: ./data/processed/drivers_processed.csv
+    rejected_output_path: ./data/rejects/drivers_rejects.csv
+    table_name: staging.stg_drivers
+    required_columns:
+      [ "driverId", "driverRef", "number", "code", "forename", "surname", "dob", "nationality" ]
+    key_columns:
+      [ "driverId" ]
+  
+  constructors:
+    input_path: ./data/raw/constructors.csv
+    valid_output_path: ./data/processed/constructors_processed.csv
+    rejected_output_path: ./data/rejects/constructors_rejects.csv
+    table_name: staging.stg_constructors
+    required_columns:
+      [ "constructorId", "constructorRef", "name", "nationality" ]
+    key_columns:
+      [ "constructorId" ]
+  
+  races:
+    input_path: ./data/raw/races.csv
+    valid_output_path: ./data/processed/races_processed.csv
+    rejected_output_path: ./data/rejects/races_rejected.csv
+    table_name: staging.stg_races
+    required_columns:
+      [ "raceId", "year", "round", "circuitId", "name", "date" ]
+    key_columns:
+      [ "raceId" ]

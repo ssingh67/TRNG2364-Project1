@@ -5,15 +5,16 @@ from psycopg2.extras import execute_batch
 from typing import Sequence, List
 
 
-def load_results_to_postgres(
+def load_dataframe_to_postgres(
         df: pd.DataFrame,
         conn: PgConnection,
         table_name: str,
         columns: Sequence[str],
-        page_size: int = 100
+        page_size: int = 100,
+        truncate_first: bool = False
 ) -> int:
     """
-    Load processed results into PostgreSQL staging table.
+    Load a DataFrame inot a PostgreSQL table using batch inserts.
     """
     if df is None or df.empty:
         return 0
@@ -35,6 +36,9 @@ def load_results_to_postgres(
 
     try:
         with conn.cursor() as cur:
+            if truncate_first:
+                cur.execute(f"TRUNCATE TABLE {table_name}")
+            
             execute_batch(cur, insert_sql, records, page_size = page_size)
         
         conn.commit()
