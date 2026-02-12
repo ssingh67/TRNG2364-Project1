@@ -2,42 +2,110 @@ logging:
   log_dir: data/logs
 
 datasets:
+
   results:
     input_path: ./data/raw/results.csv
     valid_output_path: ./data/processed/results_processed.csv
     rejected_output_path: ./data/rejects/results_rejects.csv
     table_name: staging.stg_results
+
     required_columns:
-      [ "resultId", "raceId", "driverId", "constructorId", "position", "points" ]
+      ["resultId", "raceId", "driverId", "constructorId", "position", "points"]
+
+    rename_map:
+      resultId: result_id
+      raceId: race_id
+      driverId: driver_id
+      constructorId: constructor_id
+
+    keep_columns:
+      ["result_id", "race_id", "driver_id", "constructor_id", "position", "points"]
+    
     key_columns:
-      [ "resultId", "raceId", "driverId", "constructorId" ]
-  
-  drivers:
-    input_path: ./data/raw/drivers.csv
-    valid_output_path: ./data/processed/drivers_processed.csv
-    rejected_output_path: ./data/rejects/drivers_rejects.csv
-    table_name: staging.stg_drivers
-    required_columns:
-      [ "driverId", "driverRef", "number", "code", "forename", "surname", "dob", "nationality" ]
-    key_columns:
-      [ "driverId" ]
-  
+      ["result_id"]
+
+    dedupe_keys:
+      ["result_id"]
+
+    db_columns:
+      ["result_id", "race_id", "driver_id", "constructor_id", "position", "points"]
+
+
   constructors:
     input_path: ./data/raw/constructors.csv
     valid_output_path: ./data/processed/constructors_processed.csv
     rejected_output_path: ./data/rejects/constructors_rejects.csv
     table_name: staging.stg_constructors
+
     required_columns:
-      [ "constructorId", "constructorRef", "name", "nationality" ]
+      ["constructorId", "constructorRef", "name", "nationality", "url"]
+
+    rename_map:
+      constructorId: constructor_id
+      constructorRef: constructor_ref
+
+    keep_columns:
+      ["constructor_id", "constructor_ref", "name", "nationality", "url"]
+
     key_columns:
-      [ "constructorId" ]
-  
+      ["constructor_id"]
+
+    dedupe_keys:
+      ["constructor_id"]
+
+    db_columns:
+      ["constructor_id", "constructor_ref", "name", "nationality", "url"]
+
+
+  drivers:
+    input_path: ./data/raw/drivers.csv
+    valid_output_path: ./data/processed/drivers_processed.csv
+    rejected_output_path: ./data/rejects/drivers_rejects.csv
+    table_name: staging.stg_drivers
+
+    required_columns:
+      ["driverId", "driverRef", "number", "code", "forename", "surname", "dob", "nationality", "url"]
+
+    rename_map:
+      driverId: driver_id
+      driverRef: driver_ref
+
+    keep_columns:
+      ["driver_id", "driver_ref", "number", "code", "forename", "surname", "dob", "nationality", "url"]
+
+    key_columns:
+      ["driver_id"]
+
+    dedupe_keys:
+      ["driver_id"]
+
+    db_columns:
+      ["driver_id", "driver_ref", "number", "code", "forename", "surname", "dob", "nationality", "url"]
+
+
   races:
     input_path: ./data/raw/races.csv
     valid_output_path: ./data/processed/races_processed.csv
-    rejected_output_path: ./data/rejects/races_rejected.csv
+    rejected_output_path: ./data/rejects/races_rejects.csv
     table_name: staging.stg_races
+
     required_columns:
-      [ "raceId", "year", "round", "circuitId", "name", "date" ]
+      ["raceId", "year", "round", "circuitId", "name", "date", "time", "url"]
+
+    rename_map:
+      raceId: race_id
+      circuitId: circuit_id
+      date: race_date
+      time: race_time
+
+    keep_columns:
+      ["race_id", "year", "round", "circuit_id", "name", "race_date", "race_time", "url"]
+
     key_columns:
-      [ "raceId" ]
+      ["race_id"]
+
+    dedupe_keys:
+      ["race_id"]
+
+    db_columns:
+      ["race_id", "year", "round", "circuit_id", "name", "race_date", "race_time", "url"]

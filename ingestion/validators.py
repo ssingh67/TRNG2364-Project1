@@ -1,15 +1,3 @@
-"""
-Validation utilities for the ingestion subsystem.
-
-This module is intended to hold:
-- Required column validation logic
-- Row-level validation (e.g., null checks)
-- Any reusable validation rules shared across datasets
-
-NOTE:
-- Ingestion files should CALL these functions, not reimplement validation
-"""
-
 import pandas as pd
 
 

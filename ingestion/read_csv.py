@@ -11,28 +11,26 @@ from backend.db import get_conn
 from backend.load_csvs_postgres import load_dataframe_to_postgres
 
 
-def _apply_dataset_transforms(dataset_name: str, df: pd.DataFrame) -> pd.DataFrame:
-    df = df.replace(r"\\+N", np.nan, regex = True)
+def _apply_dataset_transforms(dataset_name: str, ds: dict, df: pd.DataFrame) -> pd.DataFrame:
+    df = df.replace(r"\\N", np.nan, regex=True)
+
+    rename_map = ds.get("rename_map", {})
+    if rename_map:
+        df = df.rename(columns=rename_map)
+
+    keep_columns = ds.get("keep_columns")
+    if keep_columns:
+        df = df[[c for c in keep_columns if c in df.columns]]
 
     if dataset_name == "results":
-        df = df.rename(
-            columns = {
-                "resultId": "result_id",
-                "raceId": "race_id",
-                "driverId": "driver_id",
-                "constructorId": "constructor_id",
-            }
-        )
-
         if "position" in df.columns:
-            df["position"] = pd.to_numeric(df["position"], errors = "coerce")
-        
+            df["position"] = pd.to_numeric(df["position"], errors="coerce")
         if "points" in df.columns:
-            df["points"] = pd.to_numeric(df["points"], errors = "coerce")
-        
+            df["points"] = pd.to_numeric(df["points"], errors="coerce")
+
     return df
 
-def run_all_ingestion(config_path: str = "./ingestion/config.yaml", load_results_to_db: bool = True) -> None:
+def run_all_ingestion(config_path: str = "./ingestion/config.yaml", load_datasets_to_db: bool = True) -> None:
     config = load_config(config_path)
     validate_config(config)
     logger = setup_logger(config)
@@ -44,7 +42,8 @@ def run_all_ingestion(config_path: str = "./ingestion/config.yaml", load_results
         table_name = ds["table_name"]
 
         required_columns = ds["required_columns"]
-        key_columns = ds["key_columns"]
+        dedupe_keys = ds["dedupe_keys"]
+        db_columns = ds["db_columns"]
 
         ensure_parent_dir(valid_output_path)
         ensure_parent_dir(rejected_output_path)
@@ -58,31 +57,30 @@ def run_all_ingestion(config_path: str = "./ingestion/config.yaml", load_results
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Input file not found at: {input_path}") from e
         
+        logger.info(f"{dataset_name}: Raw columns: {list(df.columns)}")
+        
         # Validate required columns
         validate_required_columns(df, required_columns)
 
         # Apply the transformations
-        df = _apply_dataset_transforms(dataset_name, df)
+        df = _apply_dataset_transforms(dataset_name, ds, df)
 
-        # Key columns must match df at this point.
-        # For results, config uses camelCase but df is now snake_case.
-        if dataset_name == "results":
-            key_columns_effective = ["result_id", "race_id", "driver_id", "constructor_id"]
-        else:
-            key_columns_effective = key_columns
-        
-        df = deduplicate(df, key_columns_effective)
+        logger.info(f"{dataset_name}: Transformed columns: {list(df.columns)}")
 
+        missing_keys = [c for c in dedupe_keys if c not in df.columns]
+        if missing_keys:
+            raise ValueError(
+                f"{dataset_name}: dedupe_keys not found after transforms: {missing_keys}. "
+                f"Available columns: {list(df.columns)}"
+            )
+
+        # Deduplicate (after transforms, so keys match final column names)
+        df = deduplicate(df, dedupe_keys)
+
+        # Required not null: use the dedupe keys for every dataset
+        required_not_null = dedupe_keys.copy()
         if dataset_name == "results":
-            required_not_null = key_columns_effective + ["points"]
-        elif dataset_name == "races":
-            required_not_null = ["raceId"]
-        elif dataset_name == "drivers":
-            required_not_null = ["driverId"]
-        elif dataset_name == "constructor":
-            required_not_null = ["constructorId"]
-        else:
-            required_not_null = key_columns_effective
+            required_not_null += ["points"]
         
         valid_df, rejects_df = split_valid_rejects_by_required_not_null(df, required_not_null)
 
@@ -92,17 +90,8 @@ def run_all_ingestion(config_path: str = "./ingestion/config.yaml", load_results
         logger.info(f"{dataset_name}: Valid rows: {len(valid_df)} -> {valid_output_path}")
         logger.info(f"{dataset_name}: Rejected rows: {len(rejects_df)} -> {rejected_output_path}")
 
-        # DB load: keep it to results only for now
-        if load_results_to_db and dataset_name == "results":
-            db_columns = [
-                "result_id",
-                "race_id",
-                "driver_id",
-                "constructor_id",
-                "position",
-                "points",
-            ]
-
+        # DB load: All datasets now
+        if load_datasets_to_db:
             logger.info(f"Loading {len(valid_df)} valid rows into DB table: {table_name}")
 
             conn = get_conn()
