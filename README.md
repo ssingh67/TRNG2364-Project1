@@ -122,93 +122,110 @@ To generate or update the dependency list:
 pip freeze > requirements.txt
 ```
 
-Part 2 — API Service (Data Access Layer)
+### Part 2 — API Service (Data Access Layer)
 
 After ingestion produces cleaned datasets, the API layer exposes processed data through REST endpoints so applications can safely query standardized data without reading raw files.
 
 The API is implemented using FastAPI and dynamically serves any dataset found in data/processed/.
 
-Available Endpoints
-Endpoint	Description
-/api/tables	Lists all available processed tables
-/api/tables/{table}	Returns paginated rows for a table
-/docs	Interactive Swagger documentation
+### Available Endpoints
+
+| Endpoint | Description|
+|----------|------------|
+|/api/tables| Lists all available processed tables|
+|/api/tables/{table}| Returns paginated rows for a table|
+|/docs| Interactive Swagger documentation|
 
 Example:
-
+```powershell
 http://127.0.0.1:8000/api/tables
+```
 
-Running the API
+### Running the API
 
 Activate your virtual environment and run:
-
+```powershell
 uvicorn main:app --reload
+```
 
+## Then open:
 
-Then open:
-
+```powershell
 http://127.0.0.1:8000/docs
-
+```
 
 You can test all endpoints directly from the browser.
 
-Part 3 — Frontend Dashboard (React UI)
+### Part 3 — Frontend Dashboard (React UI)
 
 The frontend is a lightweight React application that allows interactive exploration of ingested datasets.
 
 The dashboard automatically adapts to table schemas — no hardcoded columns.
 
-Features
+### Features
 
-Dynamic table discovery
+- Dynamic table discovery
+- Pagination
+- Full-table search
+- Scrollable large datasets
+- Schema-agnostic rendering
 
-Pagination
-
-Full-table search
-
-Scrollable large datasets
-
-Schema-agnostic rendering
-
-Frontend Setup
+### Frontend Setup
 
 Navigate to the frontend folder:
 
+```powershell
 cd frontend
 npm install
+```
 
-
-Create environment file:
+### Create environment file:
 
 frontend/.env
 
+paste inside:
+
+```powershell
 VITE_API_BASE=http://127.0.0.1:8000
+```
 
-Run the Frontend
+### Run the Frontend
+
+```powershell
 npm run dev
-
+```
 
 Open the URL shown in the terminal (usually):
 
+```powershell
 http://localhost:5173
+```
 
-Running the Full Application (End-to-End)
+# Running the Full Application (End-to-End)
 
-Open two terminals.
+## Open two terminals.
 
-Terminal 1 — Backend API
+### Terminal 1 — Backend API
+
+```powershell
 uvicorn main:app --reload
+```
 
-Terminal 2 — Frontend UI
+### Terminal 2 — Frontend UI
+
+```powershell
 cd frontend
 npm run dev
+```
 
 
 Then visit:
-
+```powershell
 http://localhost:5173
+```
 
-System Architecture
+### System Architecture
+
 Raw CSV Dataset
       ↓
 Ingestion Pipeline (Validation & Cleaning)
@@ -219,9 +236,11 @@ FastAPI Backend
       ↓
 React Dashboard
 
-Troubleshooting
-Issue	Cause
-"Failed to fetch"	Backend not running
-No tables appear	Ingestion not executed
-Empty table	No processed files exist
-API works but UI empty	Restart frontend after editing .env
+### Troubleshooting
+
+| Issue  | Cause |
+|-------|--------|
+|"Failed to fetch"|	Backend not running|
+|No tables appear |	Ingestion not executed|
+|Empty table	| No processed files exist|
+|API works but UI empty|	Restart frontend after editing .env|
