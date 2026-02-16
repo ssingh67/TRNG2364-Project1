@@ -22,10 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STAGING_SCHEMA = "staging"
+DATA_SCHEMA = "core"
 
 
-def _get_staging_tables(conn) -> list[str]:
+def _get_schema_tables(conn, schema: str) -> list[str]:
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -34,12 +34,12 @@ def _get_staging_tables(conn) -> list[str]:
             WHERE table_schema = %s AND table_type = 'BASE TABLE'
             ORDER BY table_name
             """,
-            (STAGING_SCHEMA,),
+            (schema,),
         )
         return [r[0] for r in cur.fetchall()]
 
 
-def _get_table_columns(conn, table: str) -> list[str]:
+def _get_table_columns(conn, schema: str, table: str) -> list[str]:
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -48,11 +48,11 @@ def _get_table_columns(conn, table: str) -> list[str]:
             WHERE table_schema = %s AND table_name = %s
             ORDER BY ordinal_position
             """,
-            (STAGING_SCHEMA, table),
+            (schema, table),
         )
         cols = [r[0] for r in cur.fetchall()]
         if not cols:
-            raise HTTPException(status_code=404, detail=f"Unknown table: {table}")
+            raise HTTPException(status_code = 404, detail = f"Unknown table: {schema}.{table}")
         return cols
 
 
@@ -60,8 +60,8 @@ def _get_table_columns(conn, table: str) -> list[str]:
 def list_tables() -> dict[str, Any]:
     conn = get_conn()
     try:
-        tables = _get_staging_tables(conn)
-        return {"schema": STAGING_SCHEMA, "tables": tables}
+        tables = _get_schema_tables(conn, DATA_SCHEMA)
+        return {"schema": DATA_SCHEMA, "tables": tables}
     finally:
         conn.close()
 
@@ -76,11 +76,11 @@ def get_table_data(
     conn = get_conn()
     try:
         # Validate table exists in staging
-        tables = set(_get_staging_tables(conn))
+        tables = set(_get_schema_tables(conn, DATA_SCHEMA))
         if table not in tables:
             raise HTTPException(status_code=404, detail=f"Unknown table: {table}")
 
-        cols = _get_table_columns(conn, table)
+        cols = _get_table_columns(conn, DATA_SCHEMA, table)
 
         where_sql = sql.SQL("")
         params: list[Any] = []
@@ -98,7 +98,7 @@ def get_table_data(
         # Count total
         with conn.cursor() as cur:
             count_q = sql.SQL("SELECT COUNT(*) FROM {s}.{t} ").format(
-                s=sql.Identifier(STAGING_SCHEMA),
+                s=sql.Identifier(DATA_SCHEMA),
                 t=sql.Identifier(table),
             ) + where_sql
             cur.execute(count_q, params)
@@ -111,7 +111,7 @@ def get_table_data(
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             data_q = (
                 sql.SQL("SELECT * FROM {s}.{t} ").format(
-                    s=sql.Identifier(STAGING_SCHEMA),
+                    s=sql.Identifier(DATA_SCHEMA),
                     t=sql.Identifier(table),
                 )
                 + where_sql
@@ -121,7 +121,7 @@ def get_table_data(
             rows = cur.fetchall()
 
         return {
-            "schema": STAGING_SCHEMA,
+            "schema": DATA_SCHEMA,
             "table": table,
             "page": page,
             "page_size": page_size,
@@ -130,5 +130,80 @@ def get_table_data(
             "columns": cols,
             "rows": rows,
         }
+    finally:
+        conn.close()
+
+@app.get("/api/core/leaderboard")
+def get_leaderboard(limit: int = Query(10, ge = 1, le = 50)) -> list[dict[str, Any]]:
+    conn = get_conn()
+    try:
+        with conn.cursor(cursor_factory = RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    d.driver_id,
+                    d.forename || ' ' || d.surname AS driver_name,
+                    SUM(r.points) AS total_points
+                FROM core.results r
+                JOIN core.drivers d ON d.driver_id = r.driver_id
+                GROUP BY d.driver_id, driver_name
+                ORDER BY total_points DESC
+                LIMIT %s;
+                """,
+                (limit,),
+            )
+            return cur.fetchall()
+    finally:
+        conn.close()
+
+@app.get("/api/core/constructors")
+def get_constructors_by_year(year: int = Query(..., ge = 1950)) -> list[dict[str, Any]]:
+    conn = get_conn()
+    try:
+        with conn.cursor(cursor_factory = RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    c.constructor_id,
+                    c.name AS constructor_name,
+                    SUM(r.points) AS total_points
+                FROM core.results r
+                JOIN core.races ra ON ra.race_id = r.race_id
+                JOIN core.constructors c ON c.constructor_id = r.constructor_id
+                WHERE ra.year = %s
+                GROUP BY c.constructor_id, constructor_name
+                ORDER BY total_points DESC;
+                """,
+                (year,),
+            )
+            return cur.fetchall()
+    finally:
+        conn.close()
+
+@app.get("/api/core/drivers/{driver_id}/stats")
+def get_driver_stats(driver_id: int) -> dict[str, Any]:
+    conn = get_conn()
+    try:
+        with conn.cursor(cursor_factory = RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    d.driver_id,
+                    d.forename || ' ' || d.surname AS driver_name,
+                    COUNT(*) AS races,
+                    SUM(CASE WHEN r.position = 1 THEN 1 ELSE 0 END) AS wins,
+                    SUM(CASE WHEN r.position IN (1, 2, 3) THEN 1 ELSE 0 END) AS podiums,
+                    SUM(r.points) AS total_points
+                FROM core.results r
+                JOIN core.drivers d ON d.driver_id = r.driver_id
+                WHERE d.driver_id = %s
+                GROUP BY d.driver_id, driver_name;
+                """,
+                (driver_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code = 404, detail = "Driver not found")
+            return row
     finally:
         conn.close()
