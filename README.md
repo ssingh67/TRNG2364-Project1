@@ -5,8 +5,8 @@ Full-stack data engineering project using the Ergast Formula 1 dataset.
 ## Repository Structure
 - `ingestion/`  Python ingestion subsystem (Part 1)
 - `infra/`      AWS infrastructure (RDS, S3, etc.)
-- `backend/`    API service (later phase)
-- `frontend/`   Dashboard UI (later phase)
+- `backend/`    FastAPI service (Core schema + analytics endpoint)
+- `frontend/`   React dashboard UI
 - `data/`       Local dev data folders (raw/processed/rejects)
 
 ## Part 1 Goal (Data Ingestion Subsystem)
@@ -34,6 +34,44 @@ Optional database load:
 - Inserts use parameterized queries and batch execution.
 
 
+## Database Architecture
+
+The project uses a two-layer database design:
+
+### Staging Schema (`staging`)
+
+Raw validated data loaded directly from ingestion
+
+Tables:
+- stg_drivers
+- stg_constructors
+- stg_races
+- stg_results
+
+Purpose:
+- Preserve raw ingested structure
+- Minimal transformation
+- Safe loading zone
+
+### Core Schema (`core`)
+
+Normalized, relational model used for analytics and API queries.
+
+Tables:
+- drivers
+- constructors
+- races
+- results
+
+Purpose:
+- Enforce foreign key relationships
+- Enable aggregation queries
+- Power API analytics endpoints
+
+The database is hosted on AWS RDS (PostgreSQL).
+Separate roles are used for administrative access and application-level access.
+
+
 ### How to run
 ```powershell
 python run_ingestion.py
@@ -58,7 +96,7 @@ No code changes are required to adjust ingestion behavior - only config updates.
 ### Outputs
 - ```data/processed/``` → validated and cleaned data
 - ```data/rejects/``` → records that failed validation
-- ```data/logs/``` → reserved for ingestion logs (later phase)
+- ```data/logs/``` → reserved for ingestion logs
 
 This ingestion layer is stable and safe to depend on for later phases (database loading, APIs, and AWS development)
 
@@ -130,11 +168,14 @@ The API is implemented using FastAPI and dynamically serves any dataset found in
 
 ### Available Endpoints
 
-| Endpoint | Description|
+| Endpoint | Description |
 |----------|------------|
-|/api/tables| Lists all available processed tables|
-|/api/tables/{table}| Returns paginated rows for a table|
-|/docs| Interactive Swagger documentation|
+| /api/tables | Lists available tables in the active schema |
+| /api/tables/{table} | Returns paginated rows for a table |
+| /api/core/leaderboard | Returns top drivers by total points |
+| /api/core/constructors?year=YYYY | Constructor standings for a given year |
+| /api/core/drivers/{driver_id}/stats | Career statistics for a driver |
+| /docs | Interactive Swagger documentation |
 
 Example:
 ```powershell
@@ -145,7 +186,7 @@ http://127.0.0.1:8000/api/tables
 
 Activate your virtual environment and run:
 ```powershell
-uvicorn main:app --reload
+python -m uvicorn backend.api:app --reload --port 8000
 ```
 
 ## Then open:
@@ -208,7 +249,7 @@ http://localhost:5173
 ### Terminal 1 — Backend API
 
 ```powershell
-uvicorn main:app --reload
+python -m uvicorn backend.api:app --reload --port 8000
 ```
 
 ### Terminal 2 — Frontend UI
@@ -230,11 +271,15 @@ Raw CSV Dataset
       ↓
 Ingestion Pipeline (Validation & Cleaning)
       ↓
-Processed Data
+Staging Schema (PostgreSQL)
       ↓
-FastAPI Backend
+Core Schema (Normalized Relational Model)
+      ↓
+FastAPI Backend (Analytics Endpoints)
       ↓
 React Dashboard
+
+The PostgreSQL database is deployed on AWS RDS, providing managed cloud infrastructure for the data platform.
 
 ### Troubleshooting
 
