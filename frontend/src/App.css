@@ -1,42 +1,197 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+:root{
+  --bg: #0b0d10;
+  --panel: #0f1318;
+  --panel2: #0c1014;
+  --text: #e9edf2;
+  --muted: #9aa4af;
+  --border: rgba(255,255,255,0.08);
+  --accent: #e10600; /* F1 red */
+  --accent2: #ff3b30;
+  --good: #20c997;
+  --warn: #ffd43b;
+  --bad: #ff4d4f;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+*{ box-sizing: border-box; }
+html, body { height: 100%; }
+body{
+  margin: 0;
+  font-family: "Titillium Web", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1200px 800px at 70% -10%, rgba(225,6,0,0.18), transparent 55%),
+              radial-gradient(900px 600px at 0% 0%, rgba(255,255,255,0.06), transparent 50%),
+              var(--bg);
+  color: var(--text);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* subtle carbon/track texture */
+body:before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 6px, transparent 6px, transparent 16px);
+  opacity: 0.35;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* App shell */
+.f1-shell{
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
 }
 
-.card {
-  padding: 2em;
+.f1-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 0 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
 }
 
-.read-the-docs {
-  color: #888;
+.f1-title{
+  display:flex; gap:10px; align-items:center;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
+.f1-title .badge{
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.f1-content{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+.f1-card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 35%), var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  overflow: hidden;
+}
+
+.f1-card-header{
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.f1-card-header h2{
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 800;
+}
+.f1-accent-line{
+  height: 3px;
+  width: 64px;
+  background: var(--accent);
+  border-radius: 999px;
+  margin-top: 8px;
+}
+
+/* Table list */
+.f1-list{
+  padding: 10px;
+}
+.f1-list button{
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px;
+}
+.f1-list button:hover{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.06);
+}
+.f1-list button.active{
+  border-color: rgba(225,6,0,0.45);
+  background: rgba(225,6,0,0.10);
+}
+
+/* Data table */
+.f1-table-wrap{
+  overflow: auto;
+  max-height: calc(100vh - 56px - 14px - 14px - 120px);
+}
+
+table.f1-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.f1-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(15,19,24,0.92);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+
+.f1-table tbody td{
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+
+.f1-table tbody tr:nth-child(odd){
+  background: rgba(255,255,255,0.015);
+}
+.f1-table tbody tr:hover{
+  background: rgba(225,6,0,0.08);
+}
+
+/* Chips */
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 12px;
+}
+.chip.good{ border-color: rgba(32,201,151,0.45); color: var(--good); background: rgba(32,201,151,0.10); }
+.chip.warn{ border-color: rgba(255,212,59,0.45); color: var(--warn); background: rgba(255,212,59,0.10); }
+.chip.bad{  border-color: rgba(255,77,79,0.45);  color: var(--bad);  background: rgba(255,77,79,0.10); }
+
+/* Position badge */
+.pos{
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  min-width: 28px;
+  height: 26px;
+  border-radius: 8px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+.pos.p1{ background: rgba(255,215,0,0.12); border-color: rgba(255,215,0,0.28); }
+.pos.p2{ background: rgba(192,192,192,0.12); border-color: rgba(192,192,192,0.28); }
+.pos.p3{ background: rgba(205,127,50,0.14); border-color: rgba(205,127,50,0.28); }
