@@ -345,6 +345,7 @@ function TablesPage() {
 
 function LeaderboardPage() {
   const [limit, setLimit] = useState(10);
+  const [limitDraft, setLimitDraft] = useState("10");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -373,11 +374,19 @@ function LeaderboardPage() {
           <div style={{ fontWeight: 700 }}>Top drivers</div>
           <div style={{ opacity: 0.75 }}>Limit:</div>
           <input
-            type="number"
-            min={1}
-            max={50}
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value || 10))}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={limitDraft}
+            onChange={(e) => setLimitDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const num = Number(limitDraft || 10);
+                if (!Number.isNaN(num)) {
+                  setLimit(Math.min(50, Math.max(1, num)));
+                }
+              }
+            }}
             className="f1-search"
             style={{ maxWidth: 140 }}
           />
@@ -425,8 +434,12 @@ function LeaderboardPage() {
 /* ---------------------- PAGE: CONSTRUCTORS BY YEAR ---------------------- */
 
 function ConstructorsPage() {
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
+  const MIN_YEAR = 1950;
+  const MAX_YEAR = 2024;
+
+  const [year, setYear] = useState(MIN_YEAR);
+  const [yearDraft, setYearDraft] = useState(String(MIN_YEAR));
+  const [yearWarn, setYearWarn] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -455,13 +468,40 @@ function ConstructorsPage() {
           <div style={{ fontWeight: 700 }}>Constructor points</div>
           <div style={{ opacity: 0.75 }}>Year:</div>
           <input
-            type="number"
-            min={1950}
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value || currentYear))}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={yearDraft}
+            onChange={(e) => setYearDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+
+              const raw = yearDraft.trim();
+              const num = Number(raw === "" ? MIN_YEAR : raw);
+
+              if (Number.isNaN(num)) {
+                setYearWarn("Please enter a valid year.");
+                return;
+              }
+
+              if (num < MIN_YEAR || num > MAX_YEAR) {
+                setYearWarn(`Year must be between ${MIN_YEAR} and ${MAX_YEAR} (dataset range).`);
+                return;
+              }
+
+              setYearWarn("");
+              setYear(num);
+            }}
             className="f1-search"
             style={{ maxWidth: 160 }}
           />
+
+          {yearWarn && (
+            <span className="f1-pill" style={{ borderColor: "rgba(255,170,0,.35)" }}>
+              <span className="f1-dot" /> {yearWarn}
+            </span>
+          )}
+
           {loading && <span className="f1-pill"><span className="f1-dot" /> Loading…</span>}
           {err && <span className="f1-pill" style={{ borderColor: "rgba(255,30,45,.35)" }}><span className="f1-dot red" /> {err}</span>}
         </div>
@@ -507,21 +547,27 @@ function ConstructorsPage() {
 
 function DriversPage() {
   const [driverId, setDriverId] = useState(1);
+  const [driverDraft, setDriverDraft] = useState("1");
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  async function load() {
+  async function load(id = driverId) {
     try {
       setLoading(true);
       setErr("");
       setRow(null);
 
-      const res = await fetch(`/api/core/drivers/${encodeURIComponent(driverId)}/stats`);
+      const API_BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8000";
+      const res = await fetch(
+        `${API_BASE}/api/core/drivers/${encodeURIComponent(id)}/stats`
+      );
+
       if (!res.ok) {
         const msg = await safeJsonMessage(res);
         throw new Error(msg || `HTTP ${res.status}`);
       }
+
       const data = await res.json();
       setRow(data);
     } catch (e) {
@@ -544,15 +590,37 @@ function DriversPage() {
 
           <div style={{ opacity: 0.75 }}>Driver ID:</div>
           <input
-            type="number"
-            min={1}
-            value={driverId}
-            onChange={(e) => setDriverId(Number(e.target.value || 1))}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={driverDraft}
+            onChange={(e) => setDriverDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const num = Number(driverDraft || 1);
+                if (!Number.isNaN(num)) {
+                  const finalId = Math.max(1, num);
+                  setDriverId(finalId);
+                  load(finalId); // see tiny change below
+                }
+              }
+            }}
             className="f1-search"
             style={{ maxWidth: 160 }}
           />
 
-          <button className="f1-btn primary" onClick={load} disabled={loading}>
+          <button
+            className="f1-btn primary"
+            onClick={() => {
+              const num = Number(driverDraft || 1);
+              if (!Number.isNaN(num)) {
+                const finalId = Math.max(1, num);
+                setDriverId(finalId);
+                load(finalId);
+              }
+            }}
+            disabled={loading}
+          >
             Fetch
           </button>
 
@@ -615,14 +683,16 @@ function KeysPage() {
 
 function PageWrap({ title, children }) {
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
-      <div className="f1-card" style={{ padding: "14px 16px", marginBottom: 12 }}>
-        <div className="f1-h1">{title}</div>
-        <div className="f1-subtle">F1-style views powered by your FastAPI endpoints</div>
+    <div style = {{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
+      <div className = "f1-card" style = {{ padding: "10px 14px", marginBottom: 8}}>
+        <div className = "f1-h1">{title}</div>
+        <div className = "f1-subtle" style = {{ marginTop: 2, padding: 5 }}>
+          F1-Style views powered by your FastAPI endpoints
+        </div>
+        {children}
       </div>
-      {children}
     </div>
-  );
+  )
 }
 
 /* ----------------------------- UTILITIES -------------------------------- */
