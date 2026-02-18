@@ -1,291 +1,306 @@
-# TRNG2364-Project1 (F1 Data Platform)
+# F1 Data Platform
 
-Full-stack data engineering project using the Ergast Formula 1 dataset.
+A full-stack cloud-based data engineering platform built on the Ergast Formula 1 dataset. The system implements a complete end-to-end pipeline including configurable data ingestion, PostgreSQL staging and normalized core schemas, a FastAPI analytics service, and a dynamic React dashboard UI.
+
+The platform is deployed on AWS RDS and demonstrates modern data engineering architecture, schema design, API development, and frontend integration.
+
+---
+
+## Architecture Overview
+
+Raw CSV Dataset (Ergast F1)
+        ↓
+Config-Driven Ingestion Pipeline (Python)
+        ↓
+Staging Schema (PostgreSQL - AWS RDS)
+        ↓
+Normalized Core Schema
+        ↓
+FastAPI Backend (Analytics Endpoints)
+        ↓
+React Dashboard UI
+
+This architecture separates ingestion, transformation, analytics, and presentation layers for maintainability and scalability.
+
+---
+
+## Tech Stack
+
+### Backend & Data Engineering
+- Python
+- pandas
+- FastAPI
+- PostgreSQL
+- psycopg2
+- SQLAlchemy
+- PyYAML
+- python-dotenv
+
+### Frontend
+- React (Vite)
+- React Router
+- Modern CSS UI styling
+
+### Infrastructure
+- AWS RDS (PostgreSQL)
+- Security Groups with IP allowlisting
+
+---
 
 ## Repository Structure
-- `ingestion/`  Python ingestion subsystem (Part 1)
-- `infra/`      AWS infrastructure (RDS, S3, etc.)
-- `backend/`    FastAPI service (Core schema + analytics endpoint)
-- `frontend/`   React dashboard UI
-- `data/`       Local dev data folders (raw/processed/rejects)
+- `ingestion/` – Config-driven ingestion pipeline  
+- `backend/` – FastAPI service layer  
+- `frontend/` – React dashboard UI  
+- `infra/` – Infrastructure configuration  
+- `data/` – Raw, processed, rejects, logs  
 
-## Part 1 Goal (Data Ingestion Subsystem)
+---
 
-The Data Ingestion Subsystem is responsible for reading raw dataset files, validating and cleaning the data, and producing standardized outputs that downstream components can safely depend on.
+## Database Design
 
-### What ingestion does
-- Read raw data from CSV (config-driven)
-- Validate schema and row-level data
-- Cleans and standardizes values
-- Removes duplicate records
-- Separates valid and rejected rows
-- Write deterministic outputs for downstream use
-
-
-### Outputs and Database Load
-
-Ingestion reads `data/raw/results.csv`, validates required columns, splits valid vs rejected rows, and writes outputs to:
-- `data/processed/` → cleaned and validated CSV
-- `data/rejects/` → rejected rows
-- `data/logs/` → ingestion run logs
-
-Optional database load:
-- If PostgreSQL is configured (via `.env`) and the `stg_results` table exists, ingestion can load valid rows into the staging table using `psycopg2`.
-- Inserts use parameterized queries and batch execution.
-
-
-## Database Architecture
-
-The project uses a two-layer database design:
+The platform uses a two-layer relational model.
 
 ### Staging Schema (`staging`)
 
-Raw validated data loaded directly from ingestion
+Raw validated data loaded directly from ingestion with minimal transformation
 
 Tables:
-- stg_drivers
-- stg_constructors
-- stg_races
-- stg_results
+- `stg_drivers`
+- `stg_constructors`
+- `stg_races`
+- `stg_results`
 
 Purpose:
-- Preserve raw ingested structure
-- Minimal transformation
 - Safe loading zone
+- Preserve ingested structure
+- Isolate raw data from analytics logic
 
 ### Core Schema (`core`)
 
-Normalized, relational model used for analytics and API queries.
+Normalized relational model powering analytics and API queries
 
 Tables:
-- drivers
-- constructors
-- races
-- results
+- `drivers`
+- `constructors`
+- `races`
+- `results`
 
 Purpose:
 - Enforce foreign key relationships
 - Enable aggregation queries
-- Power API analytics endpoints
+- Support analytics endpoints
 
 The database is hosted on AWS RDS (PostgreSQL).
-Separate roles are used for administrative access and application-level access.
 
+Separate roles are used for administrative and application-level access.
 
-### How to run
+---
+
+## Data Ingestion
+
+The ingestion subsystem reads raw CSV files, validates and cleans records, and prepares structured outputs for database loading.
+
+### What It Does
+- Reads dataset files (config-driven)
+- Validates schema and required fields
+- Cleans and standardizes data
+- Removes duplicate records
+- Separates valid and rejected rows
+- Writes deterministic outputs
+- Loads validated data into PostgreSQL staging tables
+
+All ingestion behavior is controlled via
+
+`ingestion/config.yaml`
+
+No code changes are required to adjust file paths, validation rules, or deduplication keys
+
+### Running Ingestion
+
+### Windows (PowerShell)
+
 ```powershell
 python run_ingestion.py
 ```
 
-## Configuration
+### macOS / Linux
 
-All ingestion behavior is controlled by:
-```
-ingestion/config.yaml
-```
-
-The configuration defines:
-- Source file paths
-- Required columns
-- Validation rules
-- Deduplication keys
-- Output locations
-
-No code changes are required to adjust ingestion behavior - only config updates.
-
-### Outputs
-- ```data/processed/``` → validated and cleaned data
-- ```data/rejects/``` → records that failed validation
-- ```data/logs/``` → reserved for ingestion logs
-
-This ingestion layer is stable and safe to depend on for later phases (database loading, APIs, and AWS development)
-
-## Dataset
-Ergast F1 dataset (bulk CSV export). Primary ingestion target: `results.csv`.
-
-## Python Dependencies & Environment Setup
-
-### Virtual Environment
-
-This project uses Python virtual environment to isolate dependencies and ensure reproducibility.
-
-Create the virtual environment:
-
-```powershell
-python -m venv venv
+```bash
+python3 run_ingestion.py
 ```
 
-Activate the virtual environment
-```powershell
-.\venv\Scripts\Activate
-```
+Outputs:
+- `data/processed/` → cleaned data
+- `data/rejects/` → rejected records
+- `data/logs/` → ingestion logs
 
-Deactivate when finished
-```powershell
-deactivate
-```
+---
 
-### Python Dependencies
+## API Service
 
-Dependencies are managed using `pip` and tracked in `requirements.txt`.
-
-The following core packages are used for **Part 1 - Data Ingestion Subsystem**:
-
-| Package | Purpose |
-| --- | --- |
-| pandas | Reading and processing CSV/JSON data |
-| numpy | Numerical operations (pandas dependency) |
-| SQLAlchemy | Database abstraction and PostgreSQL integration |
-| psycopg2-binary | PostgreSQL database driver |
-| pydantic | Data validation and schema enforcement |
-| PyYAML | Configuration management (YAML-based settings) |
-| python-dotenv | Environment variable and secrets management |
-| pytest | Unit testing framework |
-
-Some additional packages (e.g., `six`, `greenlet`, `pluggy`) are installed automatically as dependencies of the core libraries.
-
-### Installing Dependencies
-
-All dependencies and their versions are locked in `requirements.txt`.
-
-To install dependencies in a fresh environment:
-
-```powershell
-pip install -r requirements.txt
-```
-
-To generate or update the dependency list:
-
-```powershell
-pip freeze > requirements.txt
-```
-
-### Part 2 — API Service (Data Access Layer)
-
-After ingestion produces cleaned datasets, the API layer exposes processed data through REST endpoints so applications can safely query standardized data without reading raw files.
-
-The API is implemented using FastAPI and dynamically serves any dataset found in data/processed/.
+The FastAPI backend exposes validated and normalized data through REST endpoints
 
 ### Available Endpoints
 
 | Endpoint | Description |
 |----------|------------|
-| /api/tables | Lists available tables in the active schema |
-| /api/tables/{table} | Returns paginated rows for a table |
-| /api/core/leaderboard | Returns top drivers by total points |
-| /api/core/constructors?year=YYYY | Constructor standings for a given year |
-| /api/core/drivers/{driver_id}/stats | Career statistics for a driver |
-| /docs | Interactive Swagger documentation |
-
-Example:
-```powershell
-http://127.0.0.1:8000/api/tables
-```
+| `/api/tables` | List available tables |
+| `/api/tables/{table}` | Paginated table data |
+| `/api/core/leaderboard` | Top drivers by total points |
+| `/api/core/constructors?year=YYYY` | Constructor standings for a year |
+| `/api/core/drivers/{driver_id}/stats` | Driver career statistics |
+| `/docs` | Interactive Swagger documentation |
 
 ### Running the API
 
-Activate your virtual environment and run:
+### Windows (PowerShell)
 ```powershell
 python -m uvicorn backend.api:app --reload --port 8000
 ```
 
-## Then open:
-
-```powershell
-http://127.0.0.1:8000/docs
+### macOS / Linux
+```bash
+python3 -m uvicorn backend.api:app --reload --port 8000
 ```
 
-You can test all endpoints directly from the browser.
+Open:
+`http://127.0.0.1:8000/docs`
 
-### Part 3 — Frontend Dashboard (React UI)
+---
 
-The frontend is a lightweight React application that allows interactive exploration of ingested datasets.
+## Frontend Dashboard
 
-The dashboard automatically adapts to table schemas — no hardcoded columns.
+The React dashboard provides interactive exploration of normalized core schema data through analytics endpoints exposed by the FastAPI backend.
 
 ### Features
-
 - Dynamic table discovery
 - Pagination
-- Full-table search
-- Scrollable large datasets
-- Schema-agnostic rendering
+- Search
+- Driver statistics lookup
+- Constructor standing by year
+- Leaderboard analytics
+- Schema-agnostic table rendering
 
-### Frontend Setup
+## Frontend Setup
 
-Navigate to the frontend folder:
-
-```powershell
+### Windows (PowerShell) / macOS / Linux (Bash)
+```bash
 cd frontend
 npm install
 ```
 
-### Create environment file:
-
-frontend/.env
-
-paste inside:
-
-```powershell
-VITE_API_BASE=http://127.0.0.1:8000
+Create `frontend/.env`:
+```ini
+VITE_API_BASE = http://127.0.0.1:8000
 ```
 
-### Run the Frontend
-
-```powershell
+Run:
+### Windows (PowerShell) / macOS / Linux (Bash)
+```bash
 npm run dev
 ```
 
-Open the URL shown in the terminal (usually):
-
-```powershell
-http://localhost:5173
+Open:
+```
+http://127.0.0.1:5173
 ```
 
-# Running the Full Application (End-to-End)
 
-## Open two terminals.
+## Running the Full Application
 
-### Terminal 1 — Backend API
+Open two terminals
 
+### Terminal 1 - Backend
+
+### Windows (PowerShell)
 ```powershell
 python -m uvicorn backend.api:app --reload --port 8000
 ```
 
-### Terminal 2 — Frontend UI
+### macOS / Linux
+```bash
+python3 -m uvicorn backend.api:app --reload --port 8000
+```
 
-```powershell
+### Terminal 2 - Frontend
+
+```bash
 cd frontend
 npm run dev
 ```
 
-
 Then visit:
-```powershell
+```
 http://localhost:5173
 ```
 
-### System Architecture
+---
 
-Raw CSV Dataset
-      ↓
-Ingestion Pipeline (Validation & Cleaning)
-      ↓
-Staging Schema (PostgreSQL)
-      ↓
-Core Schema (Normalized Relational Model)
-      ↓
-FastAPI Backend (Analytics Endpoints)
-      ↓
-React Dashboard
+## Environment Setup
 
-The PostgreSQL database is deployed on AWS RDS, providing managed cloud infrastructure for the data platform.
+### Python Virtual Environment
 
-### Troubleshooting
+### Windows (PowerShell)
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-| Issue  | Cause |
-|-------|--------|
-|"Failed to fetch"|	Backend not running|
-|No tables appear |	Ingestion not executed|
-|Empty table	| No processed files exist|
-|API works but UI empty|	Restart frontend after editing .env|
+### macOS / Linux
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Deactivate when finished:
+```
+deactivate
+```
+
+---
+
+## AWS Deployment Notes
+
+- Database hosted on AWS RDS (PostgreSQL)
+- Security Group inbound rules restrict access by IP (/32)
+- Separate roles for ingestion and API access
+- Environment variables managed via `.env`
+
+---
+
+## Dataset
+
+Source: Ergast Formula 1 bulk CSV export (1950 - 2024)
+
+Primary ingested datasets:
+- `drivers.csv`
+- `constructors.csv`
+- `races.csv`
+- `results.csv`
+
+The dataset contains over 2,000 non-synthetic records and supports meaningful relational analytics
+
+---
+
+## Project Highlights
+- Config-driven ingestion architecture
+- Modular validation and cleaning pipeline
+- Two-layer relational schema design
+- Cloud-hosted PostgreSQL deployment
+- RESTful analytics service
+- Dynamic Frontend integration
+- Clean Separation of ingestion, transformation, and presentation layers
+
+---
+
+## Troubleshooting
+
+| Issue | Cause |
+|----------|------------|
+| "Failed to fetch" | Backend not running |
+| No tables visible | Ingestion not executed |
+| Empty analytics results | Year outside dataset range |
+| Database connection refused | AWS Security Group or `.env` misconfigured |
+| API works but UI empty | Restart frontend after editing `.env` |
