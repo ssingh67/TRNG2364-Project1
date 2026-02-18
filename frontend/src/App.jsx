@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 
 import { fetchTables, fetchTableData } from "./api/client";
 import External from "./pages/External";
-import ApiKeysPanel from "./components/ApiKeysPanel";
+
 
 import Leaderboard from "./pages/Leaderboard";
 import Constructors from "./pages/Constructors";
@@ -15,7 +15,6 @@ import Drivers from "./pages/Drivers";
   <Route path="/leaderboard" element={<Leaderboard />} />
   <Route path="/constructors" element={<Constructors />} />
   <Route path="/drivers" element={<Drivers />} />
-  <Route path="/keys" element={<ApiKeysPanel />} />
   <Route path="/external" element={<External />} />
 </Routes>
 
@@ -40,8 +39,6 @@ export default function App() {
           {/* Your existing new-window route */}
           <Route path="/external" element={<External />} />
 
-          {/* Optional: keys manager page */}
-          <Route path="/keys" element={<KeysPage />} />
         </Routes>
       </div>
     </BrowserRouter>
@@ -96,9 +93,6 @@ function TopNav() {
           </NavLink>
           <NavLink to="/drivers" style={linkStyle}>
             Drivers
-          </NavLink>
-          <NavLink to="/keys" style={linkStyle}>
-            API Keys
           </NavLink>
         </div>
 
@@ -667,17 +661,6 @@ function StatLine({ label, value }) {
   );
 }
 
-/* ---------------------------- PAGE: API KEYS ---------------------------- */
-
-function KeysPage() {
-  return (
-    <PageWrap title="API Keys">
-      <div style={{ maxWidth: 900 }}>
-        <ApiKeysPanel />
-      </div>
-    </PageWrap>
-  );
-}
 
 /* ------------------------------ PAGE WRAP ------------------------------- */
 
